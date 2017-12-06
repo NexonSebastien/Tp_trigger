@@ -1,0 +1,98 @@
+delimiter |
+drop trigger if exists verification_sexe;
+CREATE TRIGGER verification_sexe 
+BEFORE INSERT 
+ON animal for each row
+begin
+	if new.sexe is not null 
+		and new.sexe != 'F' 
+		and new.sexe != 'M'
+	then 
+		set new.sexe = null;
+	end if;
+end |
+delimiter ;
+
+/*INSERT INTO Animal(sexe,date_naissance,nom,commentaires,espece_id,race_id,mere_id,pere_id) VALUES ('C','2010-04-05 13:43:00','Satan','un peu sadique',1,1,18,22)*/
+
+
+create table Erreur(id TINYINT unsigned AUTO_INCREMENT PRIMARY KEY,
+libErreur varchar(255) unique);
+insert into Erreur (libErreur) values ('1 : sexe autre que M ou F');
+insert into Erreur (libErreur) values ("2 : payé différent de 1 ou 0");
+
+
+
+delimiter |
+drop trigger if exists verification_sexe_erreur;
+CREATE TRIGGER verification_sexe_erreur
+BEFORE UPDATE 
+ON animal for each row
+begin
+	if new.sexe is not null 
+		and new.sexe != 'F' 
+		and new.sexe != 'M'
+	then 
+		insert into Erreur (libErreur) values ('1 : sexe autre que M ou F');
+	end if;
+end |
+delimiter ;
+
+/*UPDATE Animal set sexe = "F" where (nom="Satan");*/
+
+/* EXO 3 - 4*/
+
+delimiter |
+drop trigger if exists verification_adoption_Insert;
+CREATE TRIGGER verification_adoption_Insert
+BEFORE INSERT 
+ON adoption for each row
+begin
+	if (select disponible from animal where id = new.animal_id) = 1
+	then
+		if new.date_adoption< new.date_reservation
+		then
+			
+			insert into Erreur (libErreur) values ("3 : Date d'adoption avant la date de réservation");
+		end if;
+	
+		if new.paye is not null 
+			and new.paye != 0
+			and new.paye != 1
+		then 
+			insert into Erreur (libErreur) values ("2 : payé différent de 1 ou 0");
+		end if;
+		update animal set disponible = 0 where id = new.animal_id;
+	end if;
+end |
+delimiter ;
+INSERT INTO Adoption VALUES (3,5,'2011-01-01', '2011-03-01', 630.00, 1);
+
+delimiter |
+drop trigger if exists verification_adoption_Update;
+CREATE TRIGGER verification_adoption_Update
+BEFORE Update
+ON adoption for each row
+begin
+	if (select disponible from animal where id = new.animal_id) = 1
+	then
+		if new.date_adoption< new.date_reservation
+		then
+			insert into Erreur (libErreur) values ("3 : Date d'adoption avant la date de réservaiton");
+		end if;
+		if new.paye is not null 
+			and new.paye != 0
+			and new.paye != 1
+		then 
+			insert into Erreur (libErreur) values ("2 : payé différent de 1 ou 0");
+		end if;
+	end if;
+	update animal set disponible = 0 where id = new.animal_id;
+	update animal set disponible = 1 where id = old.animal_id;
+end |
+delimiter ;
+UPDATE adoption set  = "2003-08-15" where (client_id=1 and animal_id=39);
+
+
+
+
